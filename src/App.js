@@ -1,21 +1,17 @@
 import React from "react";
-import { createGlobalStyle } from "styled-components";
-
-const GlobalStyle = createGlobalStyle`
-  body{
-    font-family: 'Open Sans', sans-serif;
-  }
-  h1, h2, h3 {
-    font-family: 'Righteous', cursive;
-  }
-`;
+import { Navbar } from "./Navbar/Navbar";
+import { Banner } from "./Banner/Banner";
+import { Menu } from "./Menu/Menu";
+import { GlobalStyle } from "./Styles/GlobalStyle";
 
 function App() {
   return (
     <>
-      <h1>Sliceline</h1>
       <GlobalStyle />
-      <div>hello</div>
+      <Navbar />
+      <Banner />
+      <Menu />
+      <div>hello sliceline</div>
     </>
   );
 }
