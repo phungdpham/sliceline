@@ -1,8 +1,15 @@
 import React from "react";
 import styled from "styled-components";
 import { FoodLabel } from "../Menu/FoodGrid";
-import { pizzaRed} from '../Styles/colors'
+import { pizzaRed } from "../Styles/colors";
 import { Title } from "../Styles/title";
+import { formatPrice } from "../Data/FoodData";
+import { QuatityInput } from "./QuantityInput";
+import { useQuantity } from "../Hooks/useQuantity";
+import { Toppings } from "./Toppings";
+import { useToppings } from "../Hooks/useToppings";
+import { useChoice } from "../Hooks/useChoice";
+import { Choices } from "./Choices";
 
 const Dialog = styled.div`
   width: 500px;
@@ -19,14 +26,16 @@ const Dialog = styled.div`
 export const DialogContent = styled.div`
   overflow: auto;
   min-height: 100px;
-`
+  padding: 0px 40px;
+  padding-bottom: 80px;
+`;
 
 export const DialogFooter = styled.div`
   box-shadow: 0px -2px 10px 0px grey;
   height: 60px;
   display: flex;
   justify-content: center;
-`
+`;
 
 export const ConfirmButton = styled(Title)`
   margin: 10px;
@@ -37,8 +46,15 @@ export const ConfirmButton = styled(Title)`
   text-align: center;
   width: 200px;
   cursor: pointer;
-  background-color: ${pizzaRed}
-`
+  background-color: ${pizzaRed};
+  ${({ disabled }) =>
+    disabled &&
+    `
+      opacity: .5;
+      background-color: grey;
+      pointer-events: none;
+    `}
+`;
 
 const DialogShadow = styled.div`
   position: fixed;
@@ -53,22 +69,64 @@ const DialogShadow = styled.div`
 const DialogBanner = styled.div`
   min-height: 200px;
   margin-bottom: 20px;
-  ${({ img }) => `background-image: url(${img});`}
+  ${({ img }) => (img ? `background-image: url(${img});` : `min-height: 75px;`)}
   background-position: center;
   background-size: cover;
 `;
 
 const DialogBannerName = styled(FoodLabel)`
-  top: 100px;
   font-size: 30px;
   padding: 5px 40px;
+  top: ${({ img }) => (img ? `100px` : `20px`)};
 `;
 
-export function FoodDialog({ openFood, setOpenFood }) {
+const pricePerTopping = 0.5;
+
+export function getPrice(order) {
+  return (
+    order.quantity *
+    (order.price +
+      order.toppings.filter((t) => t.checked).length * pricePerTopping)
+  );
+}
+
+function hasToppings(food) {
+  return food.section === "pizza";
+}
+
+export function FoodDialogContainer({
+  openFood,
+  setOpenFood,
+  setOrders,
+  orders,
+}) {
+  const quantity = useQuantity(openFood && openFood.quantity);
+  const toppings = useToppings(openFood.toppings);
+  const choiceRadio = useChoice(openFood.choice);
+  const isEditing = openFood.index
+
   function close() {
     setOpenFood();
   }
-  if (!openFood) return null;
+
+  const order = {
+    ...openFood,
+    quantity: quantity.value,
+    toppings: toppings.toppings,
+    choice: choiceRadio.value,
+  };
+
+  function editOrder() {
+    const newOrders = [...orders];
+    newOrders[openFood.index] = order;
+    setOrders(newOrders);
+    close();
+  }
+
+  function addToOrder() {
+    setOrders([...orders, order]);
+    close();
+  }
 
   return (
     <>
@@ -78,12 +136,31 @@ export function FoodDialog({ openFood, setOpenFood }) {
           <DialogBannerName>{openFood.name}</DialogBannerName>
         </DialogBanner>
         <DialogContent>
-
+          <QuatityInput quantity={quantity} />
+          {hasToppings(openFood) && (
+            <>
+              <h3>Would you like toppings?</h3>
+              <Toppings {...toppings} />
+            </>
+          )}
+          {openFood.choices && (
+            <Choices openFood={openFood} choiceRadio={choiceRadio} />
+          )}
         </DialogContent>
         <DialogFooter>
-          <ConfirmButton>Add to Order</ConfirmButton>
+          <ConfirmButton
+            onClick={isEditing ? editOrder : addToOrder}
+            disabled={openFood.choices && !choiceRadio.value}
+          >
+            {isEditing ? `Update order:` : `Add to Order:`} {formatPrice(getPrice(order))}
+          </ConfirmButton>
         </DialogFooter>
       </Dialog>
     </>
   );
+}
+
+export function FoodDialog(props) {
+  if (!props.openFood) return null;
+  return <FoodDialogContainer {...props} />;
 }

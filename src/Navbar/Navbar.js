@@ -8,19 +8,24 @@ const NavbarStyled = styled.div`
   padding: 10px;
   position: fixed;
   width: 100%;
-  z-index:999;
+  z-index: 999;
 `;
 
 const Logo = styled(Title)`
   font-size: 20px;
   color: white;
-  text-shadow: 1px 1px 4px #380502
+  text-shadow: 1px 1px 4px #380502;
 `;
 
 export function Navbar() {
   return (
     <NavbarStyled>
-      <Logo>Sliceline <span role='img' aria-label='pizz slice'>🍕</span></Logo>
+      <Logo>
+        <span role="img" aria-label="pizz slice">
+          🍕
+        </span>{" "}
+        Sliceline{" "}
+      </Logo>
     </NavbarStyled>
   );
 }
