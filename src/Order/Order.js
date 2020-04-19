@@ -8,6 +8,8 @@ import {
 import { formatPrice } from "../Data/FoodData";
 import { getPrice } from "../FoodDialog/FoodDialog";
 
+const database = window.firebase.database();
+
 const OrderStyled = styled.div`
   position: fixed;
   right: 0px;
@@ -54,7 +56,42 @@ const DetailItem = styled.div`
   font-size: 10px;
 `;
 
-export function Order({ orders, setOrders, setOpenFood }) {
+function sendOrder(orders, { email, displayName }) {
+  const newOrderRef = database.ref("orders").push();
+  const newOrders = orders.map((order) => {
+    return Object.keys(order).reduce((acc, orderKey) => {
+      if (!order[orderKey]) {
+        return acc;
+      }
+      if (orderKey === "toppings") {
+        return {
+          ...acc,
+          [orderKey]: order[orderKey]
+            .filter(({ checked }) => checked)
+            .map(({ name }) => name),
+        };
+      }
+      return {
+        ...acc,
+        [orderKey]: order[orderKey],
+      };
+    }, {});
+  });
+  newOrderRef.set({
+    order: newOrders,
+    email,
+    displayName,
+  });
+}
+
+export function Order({
+  orders,
+  setOrders,
+  setOpenFood,
+  login,
+  loggedIn,
+  setOpenOrderDialog,
+}) {
   const subtotal = orders.reduce((total, order) => {
     return total + getPrice(order);
   }, 0);
@@ -76,7 +113,7 @@ export function Order({ orders, setOrders, setOpenFood }) {
         <OrderContent>
           <OrderContainer>Your Order</OrderContainer>
           {orders.map((order, index) => (
-            <OrderContainer editable>
+            <OrderContainer editable key={index}>
               <OrderItem
                 onClick={() => {
                   setOpenFood({ ...order, index });
@@ -86,7 +123,7 @@ export function Order({ orders, setOrders, setOpenFood }) {
                 <div>{order.name}</div>
                 <div
                   style={{ cursor: "pointer" }}
-                  onClick={e => {
+                  onClick={(e) => {
                     e.stopPropagation();
                     deleteItem(index);
                   }}
@@ -126,9 +163,24 @@ export function Order({ orders, setOrders, setOpenFood }) {
           </OrderContainer>
         </OrderContent>
       )}
-      <DialogFooter>
-        <ConfirmButton>Checkout</ConfirmButton>
-      </DialogFooter>
+
+      {orders.length > 0 && (
+        <DialogFooter>
+          <ConfirmButton
+            onClick={() => {
+              if (loggedIn) {
+                setOpenOrderDialog(true);
+                sendOrder(orders, loggedIn);
+              } else {
+                login();
+              }
+            }}
+          >
+            Checkout
+          </ConfirmButton>
+          
+        </DialogFooter>
+      )}
     </OrderStyled>
   );
 }
